@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html"
 	"io"
@@ -20,7 +21,11 @@ type Quiz struct {
 }
 
 func main() {
-	res, err := http.Get("https://opentdb.com/api.php?amount=5&category=18&difficulty=easy&type=multiple")
+	limit := flag.Int("limit", 5, "the questions limit for the quiz")
+	flag.Parse()
+
+	url := fmt.Sprintf("https://opentdb.com/api.php?amount=%d&category=18&difficulty=easy&type=multiple", *limit)
+	res, err := http.Get(url)
 	if err != nil {
 		panic(err)
 	}
@@ -51,17 +56,21 @@ func main() {
 	correct := 0
 	for _, q := range quiz.Results {
 		choices := append(q.IncorrectAnswers, q.CorrectAnswer)
-		prompt := promptui.Select{
-			Label: q.Question,
-			Items: choices,
-		}
-		_, result, err := prompt.Run()
-		if err != nil {
-			fmt.Printf("Prompt failed %v\n", err)
-			return
-		}
-
-		if result == q.CorrectAnswer {
+		answerCh := make(chan string)
+		go func() {
+			prompt := promptui.Select{
+				Label: q.Question,
+				Items: choices,
+			}
+			_, result, err := prompt.Run()
+			if err != nil {
+				panic(fmt.Sprintf("Prompt failed %v\n", err))
+			}
+			answerCh <- result
+		}()
+		
+		answer := <-answerCh
+		if answer == q.CorrectAnswer {
 			correct++
 			color.Green("Correct Answer")
 		} else {
