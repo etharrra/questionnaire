@@ -1,4 +1,4 @@
-# Go Quiz Application
+# Questionnnaire
 
 This is a Go-based command-line application that fetches multiple-choice quiz questions from the Open Trivia Database API and presents them to the user. The application evaluates the user's answers and provides feedback on their performance.
 
